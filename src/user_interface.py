@@ -9,7 +9,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, QPoint
 from PyQt6.QtGui import QIcon
 import sys
-import src.keys_vars as keys_vars
+import src.vars_util as vars_util
 
 class Special_Bounds_Keys:
     TOP_OF_SCREEN = 1
@@ -40,7 +40,7 @@ class Main_Application(QMainWindow):
         self.button_fullscreen_window.clicked.connect(self.fullscreen_button_clicked)
 
     def load_ui(self):
-        uic.load_ui.loadUi(keys_vars.resource_directory + keys_vars.ui_src_file_name, self)
+        uic.load_ui.loadUi(vars_util.Directory_Manager.get_dir_ui_file(vars_util.ui_src_file_name), self)
 
     # events
     def close_window(self):
@@ -51,16 +51,22 @@ class Main_Application(QMainWindow):
 
     def fullscreen_button_clicked(self):
         if self.isMaximized():
-            self.setWindowState(Qt.WindowState.WindowActive)
-            self.button_fullscreen_window.setIcon(QIcon(keys_vars.resource_directory + "icons/fullscreen.png"))
+            self.display_fullscreen_unenabled()
         else:
-            self.setWindowState(Qt.WindowState.WindowMaximized)
-            self.button_fullscreen_window.setIcon(QIcon(keys_vars.resource_directory + "icons/fullscreen_2.png"))
+            self.display_fullscreen_enabled()
+
+    # helpers for fullscreening
+    def display_fullscreen_enabled(self):
+        self.setWindowState(Qt.WindowState.WindowMaximized)
+        self.button_fullscreen_window.setIcon(QIcon(vars_util.Directory_Manager.get_dir_image_from_icons("fullscreen_2.png")))
+
+    def display_fullscreen_unenabled(self):
+        self.setWindowState(Qt.WindowState.WindowActive)
+        self.button_fullscreen_window.setIcon(QIcon(vars_util.Directory_Manager.get_dir_image_from_icons("fullscreen.png")))
 
     def move_window_event(self, event):
         if self.isMaximized():
-            self.setWindowState(Qt.WindowState.WindowActive)
-            self.button_fullscreen_window.setIcon(QIcon(keys_vars.resource_directory + "icons/fullscreen.png"))
+            self.display_fullscreen_unenabled()
 
         if event.buttons() == Qt.MouseButton.LeftButton:
             new_position : QPoint = self.pos() + event.globalPosition().toPoint() - self.click_position
@@ -82,7 +88,7 @@ class Main_Application(QMainWindow):
         screen_area_geometry = QApplication.primaryScreen().geometry()
         screen_area_geometry = (screen_area_geometry.width(), screen_area_geometry.height())
 
-        taskbar_height = keys_vars.util_functions.get_taskbar_height()
+        taskbar_height = vars_util.Window_Config.get_taskbar_height()
         # is window at top of screen?
         if pos.y() <= 0:
             return Special_Bounds_Keys.TOP_OF_SCREEN
@@ -98,8 +104,7 @@ class Main_Application(QMainWindow):
 
     def mouseReleaseEvent(self, event):
         if Main_Application.window_at_top:
-            self.setWindowState(Qt.WindowState.WindowMaximized)
-            self.button_fullscreen_window.setIcon(QIcon(keys_vars.resource_directory + "icons/fullscreen_2.png"))
+            self.display_fullscreen_enabled()
 
 def start_application():
     app = QApplication([])
