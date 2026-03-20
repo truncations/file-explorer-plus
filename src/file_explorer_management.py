@@ -1,4 +1,4 @@
-import vars_util as vars_util
+import src.vars_util as vars_util
 
 # RETURNS LIST OF vars_util.Directory_Point objects.
 def get_files_in_cur_directory() -> list:

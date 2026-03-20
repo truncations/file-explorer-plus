@@ -20,6 +20,7 @@ class Directory_Point:
         "KB","MB","GB","TB","PB","EB","ZB","YB",
     ]
     BYTES_MULTIPLE_CONST = 1024
+    IS_DIRECTORY_KEY = "Folder"
 
     def __init__(self, path="", file_name="", extension="", date_modified=0.0, size=-1):
         self.path = path
@@ -30,7 +31,7 @@ class Directory_Point:
         self.size = size
 
     def point_is_dir(self):
-        return self.extension == "DIRECTORY"
+        return self.extension == Directory_Point.IS_DIRECTORY_KEY
     
     def get_abs_path(self):
         return os.path.join(self.path, self.file_name)
@@ -49,7 +50,7 @@ class Directory_Point:
         return f"{self.get_abs_path()}, date modified: {self.get_date_modified_str()}, size: {self.get_size_str()}"
     
 class Directory_Manager:
-    default_directory = "C:\\Users\\Aaron\\Downloads"#os.path.abspath(os.sep)
+    default_directory = os.path.abspath(os.sep)
     current_directory = default_directory
     current_directory_path = None
 
@@ -85,7 +86,7 @@ class Directory_Manager:
             if os.path.isfile(dir_point.get_abs_path()):
                 dir_point.extension = cur_file[cur_file.index("."):]
             else:
-                dir_point.extension = "DIRECTORY"
+                dir_point.extension = Directory_Point.IS_DIRECTORY_KEY
 
             # get date modified and size
             file_statistics = os.stat(dir_point.get_abs_path())
@@ -116,3 +117,9 @@ class Window_Config():
         actual_screen_area = monitor_info.get("Monitor")
         available_screen_area = monitor_info.get("Work")
         return actual_screen_area[height_screen_key]-available_screen_area[height_screen_key]
+    
+class File_Explorer_Config:
+    NAME_COL_WIDTH = 250
+    DATE_MODIFIED_COL_WIDTH = 175
+    TYPE_COL_WIDTH = 100
+    SIZE_COL_WIDTH = 80

@@ -2,19 +2,25 @@ from PyQt6 import uic # allows to load ui
 from PyQt6.QtWidgets import (
     QApplication,
     QMainWindow,
-    QLabel,
-    QPushButton,
-    QVBoxLayout
+    QTableWidget,
+    QTableWidgetItem
 )
 from PyQt6.QtCore import Qt, QPoint
 from PyQt6.QtGui import QIcon
 import sys
 import src.vars_util as vars_util
+import src.backend as backend
 
 class Special_Bounds_Keys:
     TOP_OF_SCREEN = 1
     BOTTOM_OF_SCREEN = -1
     NO_SPECIALS = 0
+
+class File_Explorer_Keys:
+    NAME = 1
+    DATE_MODIFIED = 2
+    TYPE = 3
+    SIZE = 4
 
 class Main_Application(QMainWindow):
     app_ref = None
@@ -27,6 +33,8 @@ class Main_Application(QMainWindow):
         self.load_ui()
         
         self.setup_main_window_functions()
+        self.setup_file_explorer_table()
+        self.update_table()
 
         self.title_row.mouseMoveEvent = self.move_window_event
 
@@ -41,6 +49,31 @@ class Main_Application(QMainWindow):
 
     def load_ui(self):
         uic.load_ui.loadUi(vars_util.Directory_Manager.get_dir_ui_file(vars_util.ui_src_file_name), self)
+
+    def setup_file_explorer_table(self):
+        # temp, will fix later
+        self.file_explorer.setColumnWidth(0, 15)
+        self.file_explorer.setColumnWidth(File_Explorer_Keys.NAME, vars_util.File_Explorer_Config.NAME_COL_WIDTH)
+        self.file_explorer.setColumnWidth(File_Explorer_Keys.DATE_MODIFIED, vars_util.File_Explorer_Config.DATE_MODIFIED_COL_WIDTH)
+        self.file_explorer.setColumnWidth(File_Explorer_Keys.TYPE, vars_util.File_Explorer_Config.TYPE_COL_WIDTH)
+        self.file_explorer.setColumnWidth(File_Explorer_Keys.SIZE, vars_util.File_Explorer_Config.SIZE_COL_WIDTH)
+
+    def update_table(self):
+        self.file_explorer.clearContents()
+
+        files = backend.file_explorer_management.get_files_in_cur_directory()
+        row_count = 0
+        for file in files:
+            self.file_explorer.insertRow(row_count)
+
+            self.file_explorer.setItem(row_count, File_Explorer_Keys.NAME, QTableWidgetItem(file.file_name))
+            self.file_explorer.setItem(row_count, File_Explorer_Keys.DATE_MODIFIED, QTableWidgetItem(file.get_date_modified_str()))
+            self.file_explorer.setItem(row_count, File_Explorer_Keys.TYPE, QTableWidgetItem(file.extension.strip('.')))
+            if not file.point_is_dir():
+                self.file_explorer.setItem(row_count, File_Explorer_Keys.SIZE, QTableWidgetItem(file.get_size_str()))
+            
+            row_count += 1
+        #QTableWidget.clearContents
 
     # events
     def close_window(self):
