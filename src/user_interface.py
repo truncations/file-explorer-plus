@@ -25,9 +25,7 @@ class Main_Application(QMainWindow):
 
         Main_Application.app_ref = app_reference
         self.load_ui()
-
-        print(keys_vars.util_functions.convert_list_to_str_directory(keys_vars.current_directory))
-
+        
         self.setup_main_window_functions()
 
         self.title_row.mouseMoveEvent = self.move_window_event
