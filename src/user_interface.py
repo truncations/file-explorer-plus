@@ -1,169 +1,114 @@
-from PyQt6.QtCore import Qt
+from PyQt6 import uic # allows to load ui
 from PyQt6.QtWidgets import (
-    QApplication, 
+    QApplication,
     QMainWindow,
-    QWidget, 
-    QLabel, 
-    QPushButton, 
-    QVBoxLayout, 
-    QHBoxLayout,
-    QLineEdit,
-    QStackedWidget,
-    QToolBar,
-    QSizePolicy,
+    QLabel,
+    QPushButton,
+    QVBoxLayout
 )
-from PyQt6.QtGui import QAction, QIcon
-#import src.keys_vars when main runner
-import keys_vars as keys_vars
+from PyQt6.QtCore import Qt, QPoint
+from PyQt6.QtGui import QIcon
+import sys
+import src.keys_vars as keys_vars
 
-class Menu_Button(QAction):
-    def __init__(self, text, ref, icon : QIcon = None, tip="", is_toggleable=False):
-        super().__init__(text, ref)
-        self.setStatusTip(tip)
-        self.setCheckable(is_toggleable)
-
-        if icon is not None:
-            self.setIcon(icon)
+class Special_Bounds_Keys:
+    TOP_OF_SCREEN = 1
+    BOTTOM_OF_SCREEN = -1
+    NO_SPECIALS = 0
 
 class Main_Application(QMainWindow):
-    def __init__(self):
+    app_ref = None
+    window_at_top = False
+
+    def __init__(self, app_reference):
         super().__init__()
 
-        self.customize_window()
-        self.create_widgets()
-        self.design_widgets()
-        self.design_layouts()
-        self.connect_events()
+        Main_Application.app_ref = app_reference
+        self.load_ui()
 
-    def customize_window(self):
-        self.setWindowTitle("File Explorer+")
-        #self.setWindowIcon()
-        self.setMinimumSize(keys_vars.Window_Config.min_width, keys_vars.Window_Config.min_height)
-        self.resize(keys_vars.Window_Config.default_width, keys_vars.Window_Config.default_height)
+        print(keys_vars.util_functions.convert_list_to_str_directory(keys_vars.current_directory))
 
-    # only create widgets that will be present always throughout the application.
-    def create_widgets(self):
-        self.main_widget = QWidget()
-        self.menu_buttons_row = QToolBar("Menu Buttons")
+        self.setup_main_window_functions()
 
-        # menu buttons
-        self.tab_buttons = {
-            "explorer": Menu_Button("Explorer",self,None,"View Explorer Tab.",True),
-            "media": Menu_Button("Media",self,None,"View Media Tab.",True),
-            "settings": Menu_Button("Settings",self,None,"View Settings Tab.",True),
-        }
+        self.title_row.mouseMoveEvent = self.move_window_event
 
-        self.extra_buttons = {
-            "open_with_file_explorer": Menu_Button("BACKWARDS COMPATIBILITY",self),
-            "list_view": Menu_Button("LIST VIEW",self),
-            "icons_view": Menu_Button("ICONS VIEW",self),
-        }
+    def setup_main_window_functions(self):
+        # minimize, fullscreen, quit, move window.
+        self.setWindowFlag(Qt.WindowType.FramelessWindowHint)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
-        # navigation stuff
-        self.navigation_buttons = {
-            "backwards": QPushButton("B"),
-            "forwards": QPushButton("F"),
-            "back_directory": QPushButton("U"),
-            "refresh":  QPushButton("R"),
-        }
-        self.directory_bar = QLabel("Directory Bar")
-        self.search_bar = QLineEdit()
-        self.search_button = QPushButton("S")
+        self.button_close_window.clicked.connect(self.close_window)
+        self.button_minimize_window.clicked.connect(self.minimize_window)
+        self.button_fullscreen_window.clicked.connect(self.fullscreen_button_clicked)
 
-        # main content
-        self.navigation_section = QWidget()
-        self.pages = QStackedWidget()
+    def load_ui(self):
+        uic.load_ui.loadUi(keys_vars.resource_directory + keys_vars.ui_src_file_name, self)
 
-        # extra info
-        self.storage_bar = QWidget()
-        self.extra_info = QLabel("EXTRA INFO")
-        
+    # events
+    def close_window(self):
+        Main_Application.app_ref.exit()
 
-    def design_widgets(self):
-        # prevent the toolbar, menu_buttons_row from being movable and hidden.
-        self.menu_buttons_row.setContextMenuPolicy(Qt.ContextMenuPolicy.PreventContextMenu)
-        self.menu_buttons_row.setMovable(False)
+    def minimize_window(self):
+        self.setWindowState(Qt.WindowState.WindowMinimized)
 
-        for button in self.navigation_buttons.values():
-            button.setMaximumWidth(25)
-        self.search_button.setMaximumWidth(25)
+    def fullscreen_button_clicked(self):
+        if self.isMaximized():
+            self.setWindowState(Qt.WindowState.WindowActive)
+            self.button_fullscreen_window.setIcon(QIcon(keys_vars.resource_directory + "icons/fullscreen.png"))
+        else:
+            self.setWindowState(Qt.WindowState.WindowMaximized)
+            self.button_fullscreen_window.setIcon(QIcon(keys_vars.resource_directory + "icons/fullscreen_2.png"))
 
-        self.search_bar.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
+    def move_window_event(self, event):
+        if self.isMaximized():
+            self.setWindowState(Qt.WindowState.WindowActive)
+            self.button_fullscreen_window.setIcon(QIcon(keys_vars.resource_directory + "icons/fullscreen.png"))
 
-        self.directory_bar.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        if event.buttons() == Qt.MouseButton.LeftButton:
+            new_position : QPoint = self.pos() + event.globalPosition().toPoint() - self.click_position
+            # ensure that the window is always apparent, even when near the taskbar, as well as if the window hits the top, it will auto fullscreen.
+            special_bounds_key = self.check_for_special_bounds(new_position)
+            Main_Application.window_at_top = False
 
-    def design_layouts(self):
-        """
-        create layouts
-        """
-        self.main_layout = QVBoxLayout()
+            if special_bounds_key == Special_Bounds_Keys.TOP_OF_SCREEN:
+                Main_Application.window_at_top = True
+                self.move(new_position)
+            elif special_bounds_key == Special_Bounds_Keys.NO_SPECIALS:
+                self.move(new_position)
+            
+            self.click_position = event.globalPosition().toPoint()
+            event.accept()
 
-        self.navigation_section_layout = QVBoxLayout()
-        self.navigation_section_layout.setContentsMargins(5,5,5,5)
-        self.navigation_section_layout.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
-        # TEST
-        self.navigation_section_layout.addWidget(QLabel("TEST"))
-        self.navigation_section_layout.addWidget(QLabel("QUICK ACCESS"))
-        self.navigation_section_layout.addWidget(QLabel("MY HEAD"))
+    # MUST TAKE IN QPOINT
+    def check_for_special_bounds(self, pos : QPoint):
+        screen_area_geometry = QApplication.primaryScreen().geometry()
+        screen_area_geometry = (screen_area_geometry.width(), screen_area_geometry.height())
 
-        # directroy bar, search bar, and navigation buttons
-        self.main_navigation_row = QHBoxLayout()    
-        self.navigation_buttons_row = QHBoxLayout()
-        self.directory_bar_row = QHBoxLayout()
-        self.search_row = QHBoxLayout()
+        taskbar_height = keys_vars.util_functions.get_taskbar_height()
+        # is window at top of screen?
+        if pos.y() <= 0:
+            return Special_Bounds_Keys.TOP_OF_SCREEN
+        # else is window near the taskbar?
+        elif pos.y() > screen_area_geometry[1] - taskbar_height - 5:
+            return Special_Bounds_Keys.BOTTOM_OF_SCREEN
+        # otherwise we're fine..
+        else:
+            return Special_Bounds_Keys.NO_SPECIALS
 
-        # navigation section (on the left) and the main window itself
-        self.main_content_row = QHBoxLayout()
-        self.navigation_section.setLayout(self.navigation_section_layout)
+    def mousePressEvent(self, event):
+        self.click_position = event.globalPosition().toPoint()
 
-        # extra info like storage for disk and number of items in directory.
-        self.extra_info_row = QHBoxLayout()
-
-        """
-        push widgets into layouts
-        """
-        for button in self.tab_buttons.values():
-            self.menu_buttons_row.addAction(button)
-        for button in self.extra_buttons.values():
-            self.menu_buttons_row.addAction(button)
-
-        for button in self.navigation_buttons.values():
-            self.navigation_buttons_row.addWidget(button)  
-        self.directory_bar_row.addWidget(self.directory_bar)
-        self.search_row.addWidget(self.search_bar, 3)
-        self.search_row.addWidget(self.search_button)
-        self.main_navigation_row.addLayout(self.navigation_buttons_row, 1)
-        self.main_navigation_row.addLayout(self.directory_bar_row, 5)
-        self.main_navigation_row.addLayout(self.search_row, 1)
-
-        self.main_content_row.addWidget(self.navigation_section)
-        self.main_content_row.addWidget(self.pages)
-
-        self.extra_info_row.addWidget(self.storage_bar, 4)
-        self.extra_info_row.addWidget(self.extra_info, 1)
-
-        """
-        finalize
-        """ 
-        self.main_layout.addLayout(self.main_navigation_row)
-        self.main_layout.addLayout(self.main_content_row)
-        self.main_layout.addLayout(self.extra_info_row)
-
-        self.main_widget.setLayout(self.main_layout)
-        self.setCentralWidget(self.main_widget)
-        self.addToolBar(self.menu_buttons_row)
-
-    def connect_events(self):
-        pass
+    def mouseReleaseEvent(self, event):
+        if Main_Application.window_at_top:
+            self.setWindowState(Qt.WindowState.WindowMaximized)
+            self.button_fullscreen_window.setIcon(QIcon(keys_vars.resource_directory + "icons/fullscreen_2.png"))
 
 def start_application():
-    application = QApplication([])
+    app = QApplication([])
 
-    # load any QT-required variables if necessary
+    # define all QT variables here
 
-    main_window = Main_Application()
-    main_window.show()
+    window = Main_Application(app)
+    window.show()
 
-    application.exec()
-
-start_application()
+    sys.exit(app.exec())

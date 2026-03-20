@@ -1,0 +1,22 @@
+<RCC>
+  <qresource prefix="main">
+    <file>icons/backwards_media.png</file>
+    <file>icons/forwards_media.png</file>
+    <file>icons/pause.png</file>
+    <file>icons/play.png</file>
+    <file>icons/shuffle.png</file>
+    <file>icons/magnify.png</file>
+    <file>icons/left_arrow.png</file>
+    <file>icons/refresh.png</file>
+    <file>icons/right_arrow.png</file>
+    <file>icons/up_arrow.png</file>
+    <file>icons/file explorer.png</file>
+    <file>icons/icons.png</file>
+    <file>icons/list.png</file>
+    <file>icons/fullscreen.png</file>
+    <file>icons/fullscreen_2.png</file>
+    <file>icons/icon.png</file>
+    <file>icons/minimize.png</file>
+    <file>icons/quit.png</file>
+  </qresource>
+</RCC>
