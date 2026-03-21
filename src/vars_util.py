@@ -119,7 +119,12 @@ class Window_Config():
         return actual_screen_area[height_screen_key]-available_screen_area[height_screen_key]
     
 class File_Explorer_Config:
-    NAME_COL_WIDTH = 250
-    DATE_MODIFIED_COL_WIDTH = 175
+    NAME_COL_WIDTH = 225
+    DATE_MODIFIED_COL_WIDTH = 150
     TYPE_COL_WIDTH = 100
     SIZE_COL_WIDTH = 80
+
+def get_open_file_explorer_command():
+    file_explorer_dir = os.path.join(os.getenv('WINDIR'), 'explorer.exe')
+    cur_dir = os.path.normpath(Directory_Manager.current_directory)
+    return [file_explorer_dir, cur_dir]
