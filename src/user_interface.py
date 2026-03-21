@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import (
     QTableWidgetItem
 )
 from PyQt6.QtCore import Qt, QPoint
-from PyQt6.QtGui import QIcon
+from PyQt6.QtGui import QIcon, QFont
 import sys
 import src.vars_util as vars_util
 import src.backend as backend
@@ -53,6 +53,10 @@ class Main_Application(QMainWindow):
     def setup_file_explorer_table(self):
         # temp, will fix later
         self.file_explorer.setColumnWidth(0, 15)
+
+        # proper setup here
+        self.file_explorer.horizontalHeader().setFont(self.file_explorer.font())
+
         self.file_explorer.setColumnWidth(File_Explorer_Keys.NAME, vars_util.File_Explorer_Config.NAME_COL_WIDTH)
         self.file_explorer.setColumnWidth(File_Explorer_Keys.DATE_MODIFIED, vars_util.File_Explorer_Config.DATE_MODIFIED_COL_WIDTH)
         self.file_explorer.setColumnWidth(File_Explorer_Keys.TYPE, vars_util.File_Explorer_Config.TYPE_COL_WIDTH)
