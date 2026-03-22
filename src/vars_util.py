@@ -14,6 +14,12 @@ ui_src_file_name = "ui_source.ui"
 
 max_log_count = 30
 
+class File_Explorer_Config:
+    NAME_COL_WIDTH = 225
+    DATE_MODIFIED_COL_WIDTH = 150
+    TYPE_COL_WIDTH = 100
+    SIZE_COL_WIDTH = 80
+    
 class Directory_Point:
     time_format_str = "%m/%d/%Y %I:%M %p"
     file_size_multiples = [
@@ -66,8 +72,13 @@ class Directory_Manager:
     # list_obj -> list of str(s)
     @staticmethod
     def split_path_into_list(directory):
-        path_list = [path for path in os.path.split(directory)]
+        path_list = [path for path in os.path.normpath(directory).split(os.sep)]
         return path_list
+    
+    def compile_list_into_path(path_list):
+        if len(path_list) == 1:
+            return path_list[0] + os.sep
+        return (os.sep).join(path_list)
     
     @staticmethod
     def get_list_of_files(directory):
@@ -117,14 +128,15 @@ class Window_Config():
         actual_screen_area = monitor_info.get("Monitor")
         available_screen_area = monitor_info.get("Work")
         return actual_screen_area[height_screen_key]-available_screen_area[height_screen_key]
-    
-class File_Explorer_Config:
-    NAME_COL_WIDTH = 225
-    DATE_MODIFIED_COL_WIDTH = 150
-    TYPE_COL_WIDTH = 100
-    SIZE_COL_WIDTH = 80
+
 
 def get_open_file_explorer_command():
     file_explorer_dir = os.path.join(os.getenv('WINDIR'), 'explorer.exe')
     cur_dir = os.path.normpath(Directory_Manager.current_directory)
     return [file_explorer_dir, cur_dir]
+
+def is_dir_given_path(directory):
+    return os.path.isdir(directory)
+
+def convert_to_path_str(string):
+    return os.path.normpath(string)

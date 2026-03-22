@@ -707,7 +707,7 @@ QPushButton:pressed {
             </font>
            </property>
            <property name="placeholderText">
-            <string>Search in Directory</string>
+            <string>Search Directory...</string>
            </property>
           </widget>
          </item>
@@ -813,7 +813,7 @@ QPushButton:pressed {
           <string notr="true"/>
          </property>
          <property name="currentIndex">
-          <number>0</number>
+          <number>1</number>
          </property>
          <widget class="QWidget" name="explorer_page">
           <property name="styleSheet">
@@ -1474,6 +1474,9 @@ QLabel {
                     <property name="text">
                      <string>Program Logs (Developer Tools)</string>
                     </property>
+                    <property name="alignment">
+                     <set>Qt::AlignmentFlag::AlignCenter</set>
+                    </property>
                    </widget>
                   </item>
                   <item>
@@ -1488,12 +1491,17 @@ QLabel {
                     <property name="text">
                      <string>Used for debugging purposes.</string>
                     </property>
+                    <property name="alignment">
+                     <set>Qt::AlignmentFlag::AlignCenter</set>
+                    </property>
                    </widget>
                   </item>
                   <item>
                    <widget class="QScrollArea" name="list_of_logs">
                     <property name="styleSheet">
-                     <string notr="true"/>
+                     <string notr="true">QScrollArea {
+	border: none;
+}</string>
                     </property>
                     <property name="widgetResizable">
                      <bool>true</bool>
@@ -1503,8 +1511,8 @@ QLabel {
                       <rect>
                        <x>0</x>
                        <y>0</y>
-                       <width>667</width>
-                       <height>179</height>
+                       <width>671</width>
+                       <height>183</height>
                       </rect>
                      </property>
                      <property name="styleSheet">
@@ -1658,8 +1666,6 @@ QLabel {
    <zorder>verticalSpacer_2</zorder>
   </widget>
  </widget>
- <resources>
-  <include location="image_ui_resources.qrc"/>
- </resources>
+ <resources/>
  <connections/>
 </ui>

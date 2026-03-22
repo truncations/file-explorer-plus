@@ -6,7 +6,9 @@ from PyQt6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QWidget, 
-    QSizePolicy
+    QSizePolicy,
+    QLineEdit,
+    QVBoxLayout
 )
 from PyQt6.QtCore import Qt, QPoint
 from PyQt6.QtGui import QIcon, QPixmap
@@ -39,14 +41,26 @@ class Main_Application(QMainWindow):
         self.setup_main_window_functions()
         self.setup_file_explorer_table()
 
-        self.setup_explorer_page()
+        self.show_explorer_page()
 
         self.connect_events()
 
+    #
+    # ui setup functions to ensure application runs as expected
+    #
     def setup_main_window_functions(self):
         # minimize, fullscreen, quit, move window.
         self.setWindowFlag(Qt.WindowType.FramelessWindowHint)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+
+    def setup_file_explorer_table(self):
+        # proper setup here
+        self.file_explorer.horizontalHeader().setFont(self.file_explorer.font())
+
+        self.file_explorer.setColumnWidth(File_Explorer_Keys.NAME, vars_util.File_Explorer_Config.NAME_COL_WIDTH)
+        self.file_explorer.setColumnWidth(File_Explorer_Keys.DATE_MODIFIED, vars_util.File_Explorer_Config.DATE_MODIFIED_COL_WIDTH)
+        self.file_explorer.setColumnWidth(File_Explorer_Keys.TYPE, vars_util.File_Explorer_Config.TYPE_COL_WIDTH)
+        self.file_explorer.setColumnWidth(File_Explorer_Keys.SIZE, vars_util.File_Explorer_Config.SIZE_COL_WIDTH)
 
     def load_ui(self):
         uic.load_ui.loadUi(vars_util.Directory_Manager.get_dir_ui_file(vars_util.ui_src_file_name), self)
@@ -62,57 +76,32 @@ class Main_Application(QMainWindow):
         self.button_tab_settings.clicked.connect(self.settings_tab_button_clicked)
 
         self.title_row.mouseMoveEvent = self.move_window_event
+        self.input_status_bar.returnPressed.connect(self.status_bar_enter_pressed)
 
-    def explorer_tab_button_clicked(self):
-        if not self.button_tab_explorer.isChecked():
-            self.button_tab_explorer.setChecked(True)
-        else:
-            self.setup_explorer_page()
-            self.button_tab_media.setChecked(False)
-            self.button_tab_settings.setChecked(False)
+        self.button_refresh.clicked.connect(self.refresh_button_pressed)
+        self.button_parent_directory.clicked.connect(self.up_parent_pressed)
 
-    def media_tab_button_clicked(self):
-        if not self.button_tab_media.isChecked():
-            self.button_tab_media.setChecked(True)
-        else:
-            self.setup_media_page()
-            self.button_tab_explorer.setChecked(False)
-            self.button_tab_settings.setChecked(False)
-
-    def settings_tab_button_clicked(self):
-        if not self.button_tab_settings.isChecked():
-            self.button_tab_settings.setChecked(True)
-        else:
-            self.setup_settings_page()
-            self.button_tab_media.setChecked(False)
-            self.button_tab_explorer.setChecked(False)
-
-    def setup_explorer_page(self):
+    #
+    # ui functions
+    #
+    def show_explorer_page(self):
         self.main_content.setCurrentIndex(0)
         self.input_status_bar.setReadOnly(False)
         self.update_file_explorer()
 
-    def setup_media_page(self):
+    def show_media_page(self):
         self.main_content.setCurrentIndex(1)
         self.input_status_bar.setReadOnly(True)
         self.input_status_bar.setText(vars_util.Directory_Manager.current_directory)
 
-    def setup_settings_page(self):
+    def show_settings_page(self):
         self.main_content.setCurrentIndex(2)
         self.input_status_bar.setReadOnly(True)
         self.input_status_bar.setText("SETTINGS")
 
-    def setup_file_explorer_table(self):
-        # proper setup here
-        self.file_explorer.horizontalHeader().setFont(self.file_explorer.font())
-
-        self.file_explorer.setColumnWidth(File_Explorer_Keys.NAME, vars_util.File_Explorer_Config.NAME_COL_WIDTH)
-        self.file_explorer.setColumnWidth(File_Explorer_Keys.DATE_MODIFIED, vars_util.File_Explorer_Config.DATE_MODIFIED_COL_WIDTH)
-        self.file_explorer.setColumnWidth(File_Explorer_Keys.TYPE, vars_util.File_Explorer_Config.TYPE_COL_WIDTH)
-        self.file_explorer.setColumnWidth(File_Explorer_Keys.SIZE, vars_util.File_Explorer_Config.SIZE_COL_WIDTH)
-
     def update_file_explorer(self):
         self.file_explorer.clearContents()
+        self.file_explorer.setRowCount(0)
 
         files = backend.file_explorer_management.get_files_in_cur_directory()
         row_count = 0
@@ -153,9 +142,35 @@ class Main_Application(QMainWindow):
 
         base_widget.setLayout(base_layout)
         return base_widget
+    
+    # helpers for fullscreening
+    def display_fullscreen_enabled(self):
+        self.setWindowState(Qt.WindowState.WindowMaximized)
+        self.button_fullscreen_window.setIcon(QIcon(vars_util.Directory_Manager.get_dir_image_from_icons("fullscreen_2.png")))
 
+    def display_fullscreen_unenabled(self):
+        self.setWindowState(Qt.WindowState.WindowActive)
+        self.button_fullscreen_window.setIcon(QIcon(vars_util.Directory_Manager.get_dir_image_from_icons("fullscreen.png")))
 
+    # MUST TAKE IN QPOINT
+    def check_for_special_bounds(self, pos : QPoint):
+        screen_area_geometry = QApplication.primaryScreen().geometry()
+        screen_area_geometry = (screen_area_geometry.width(), screen_area_geometry.height())
+
+        taskbar_height = vars_util.Window_Config.get_taskbar_height()
+        # is window at top of screen?
+        if pos.y() <= 0:
+            return Special_Bounds_Keys.TOP_OF_SCREEN
+        # else is window near the taskbar?
+        elif pos.y() > screen_area_geometry[1] - taskbar_height - 5:
+            return Special_Bounds_Keys.BOTTOM_OF_SCREEN
+        # otherwise we're fine..
+        else:
+            return Special_Bounds_Keys.NO_SPECIALS
+
+    #
     # events
+    #
     def close_window(self):
         Main_Application.app_ref.exit()
 
@@ -168,14 +183,81 @@ class Main_Application(QMainWindow):
         else:
             self.display_fullscreen_enabled()
 
-    # helpers for fullscreening
-    def display_fullscreen_enabled(self):
-        self.setWindowState(Qt.WindowState.WindowMaximized)
-        self.button_fullscreen_window.setIcon(QIcon(vars_util.Directory_Manager.get_dir_image_from_icons("fullscreen_2.png")))
+    def status_bar_enter_pressed(self):
+        if not self.input_status_bar.isEnabled():
+            return
+        input_text = self.input_status_bar.text()
+        if input_text == "":
+            input_text=vars_util.Directory_Manager.default_directory
+        input_text = vars_util.convert_to_path_str(input_text)
+        # handle doing
+        if vars_util.is_dir_given_path(input_text):
+            vars_util.Directory_Manager.current_directory = input_text
+            vars_util.Directory_Manager.current_directory_path = vars_util.Directory_Manager.split_path_into_list(vars_util.Directory_Manager.current_directory)
+            self.update_file_explorer()
+        else:
+            pass
 
-    def display_fullscreen_unenabled(self):
-        self.setWindowState(Qt.WindowState.WindowActive)
-        self.button_fullscreen_window.setIcon(QIcon(vars_util.Directory_Manager.get_dir_image_from_icons("fullscreen.png")))
+    # todo
+    def refresh_button_pressed(self):
+        self.update_file_explorer()
+
+    def up_parent_pressed(self):
+        # means we're only looking at the drive
+        if len(vars_util.Directory_Manager.current_directory_path) == 1:
+            return
+        if vars_util.Directory_Manager.current_directory_path[1] == "":
+            return
+        vars_util.Directory_Manager.current_directory_path.pop()
+        vars_util.Directory_Manager.current_directory = vars_util.Directory_Manager.compile_list_into_path(vars_util.Directory_Manager.current_directory_path)
+
+        self.input_status_bar.setText(vars_util.Directory_Manager.current_directory)
+        self.update_file_explorer()
+
+    def explorer_tab_button_clicked(self):
+        if not self.button_tab_explorer.isChecked():
+            self.button_tab_explorer.setChecked(True)
+        else:
+            self.show_explorer_page()
+            self.button_tab_media.setChecked(False)
+            self.button_tab_settings.setChecked(False)
+
+            self.button_backwards.setVisible(True)
+            self.button_forwards.setVisible(True)
+            self.button_parent_directory.setVisible(True)
+            self.button_refresh.setVisible(True)
+            self.input_search_bar.setVisible(True)
+            self.search_button.setVisible(True)
+
+    def media_tab_button_clicked(self):
+        if not self.button_tab_media.isChecked():
+            self.button_tab_media.setChecked(True)
+        else:
+            self.show_media_page()
+            self.button_tab_explorer.setChecked(False)
+            self.button_tab_settings.setChecked(False)
+
+            self.button_backwards.setVisible(False)
+            self.button_forwards.setVisible(False)
+            self.button_parent_directory.setVisible(False)
+            self.button_refresh.setVisible(False)
+            self.input_search_bar.setVisible(False)
+            self.search_button.setVisible(False)
+
+    def settings_tab_button_clicked(self):
+        if not self.button_tab_settings.isChecked():
+            self.button_tab_settings.setChecked(True)
+        else:
+            self.show_settings_page()
+            self.button_tab_media.setChecked(False)
+            self.button_tab_explorer.setChecked(False)
+
+            self.button_backwards.setVisible(False)
+            self.button_forwards.setVisible(False)
+            self.button_parent_directory.setVisible(False)
+            self.button_refresh.setVisible(False)
+            self.input_search_bar.setVisible(False)
+            self.search_button.setVisible(False)
 
     def move_window_event(self, event):
         if self.isMaximized():
@@ -196,22 +278,6 @@ class Main_Application(QMainWindow):
             self.click_position = event.globalPosition().toPoint()
             event.accept()
 
-    # MUST TAKE IN QPOINT
-    def check_for_special_bounds(self, pos : QPoint):
-        screen_area_geometry = QApplication.primaryScreen().geometry()
-        screen_area_geometry = (screen_area_geometry.width(), screen_area_geometry.height())
-
-        taskbar_height = vars_util.Window_Config.get_taskbar_height()
-        # is window at top of screen?
-        if pos.y() <= 0:
-            return Special_Bounds_Keys.TOP_OF_SCREEN
-        # else is window near the taskbar?
-        elif pos.y() > screen_area_geometry[1] - taskbar_height - 5:
-            return Special_Bounds_Keys.BOTTOM_OF_SCREEN
-        # otherwise we're fine..
-        else:
-            return Special_Bounds_Keys.NO_SPECIALS
-        
     def open_file_explorer(self):
         subprocess_run(vars_util.get_open_file_explorer_command())
 
